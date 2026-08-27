@@ -1,0 +1,3 @@
+run: docker-compose up
+seed: npm run seed
+base_url: http://localhost:3000

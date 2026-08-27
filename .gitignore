@@ -1,0 +1,29 @@
+# Environment
+.env
+.env.local
+
+# Dependencies
+node_modules/
+
+# Build
+dist/
+build/
+
+# Database
+*.db
+*.sqlite
+postgres-data/
+
+# Images (keep small)
+images/
+!images/.gitkeep
+
+# Logs
+*.log
+
+# OS
+.DS_Store
+
+# IDE
+.vscode/
+.idea/
