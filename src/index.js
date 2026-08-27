@@ -3,6 +3,7 @@ const cors = require('cors');
 const dotenv = require('dotenv');
 const { runMigration } = require('./db/migrate');
 const imageRoutes = require('./routes/imageRoutes');
+const matchingRoutes = require('./routes/matchingRoutes');
 
 dotenv.config();
 
@@ -25,6 +26,7 @@ app.get('/health', (req, res) => {
 
 // Routes
 app.use('/api', imageRoutes);
+app.use('/api', matchingRoutes);
 
 // Start server
 async function start() {
@@ -37,6 +39,9 @@ async function start() {
             console.log(`📸 Upload: POST http://localhost:${PORT}/api/images/upload`);
             console.log(`🔄 Process: POST http://localhost:${PORT}/api/images/process`);
             console.log(`📋 Images: GET http://localhost:${PORT}/api/images`);
+            console.log(`📝 Posts: POST http://localhost:${PORT}/api/posts`);
+            console.log(`🔍 Matches: GET http://localhost:${PORT}/api/posts/:id/matches`);
+            console.log(`📊 Cost Logs: GET http://localhost:${PORT}/api/cost-logs`);
         });
     } catch (error) {
         console.error('❌ Failed to start server:', error.message);
