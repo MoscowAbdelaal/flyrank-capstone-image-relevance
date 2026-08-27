@@ -2,6 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const dotenv = require('dotenv');
 const { runMigration } = require('./db/migrate');
+const imageRoutes = require('./routes/imageRoutes');
 
 dotenv.config();
 
@@ -22,6 +23,9 @@ app.get('/health', (req, res) => {
     });
 });
 
+// Routes
+app.use('/api', imageRoutes);
+
 // Start server
 async function start() {
     try {
@@ -30,6 +34,9 @@ async function start() {
         app.listen(PORT, () => {
             console.log(`\n🚀 Image Relevance Engine running at http://localhost:${PORT}`);
             console.log(`📚 Health: http://localhost:${PORT}/health`);
+            console.log(`📸 Upload: POST http://localhost:${PORT}/api/images/upload`);
+            console.log(`🔄 Process: POST http://localhost:${PORT}/api/images/process`);
+            console.log(`📋 Images: GET http://localhost:${PORT}/api/images`);
         });
     } catch (error) {
         console.error('❌ Failed to start server:', error.message);
