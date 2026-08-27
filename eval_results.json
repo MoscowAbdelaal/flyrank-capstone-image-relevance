@@ -1,0 +1,89 @@
+{
+  "timestamp": "2026-08-27T05:01:11.972Z",
+  "total": 10,
+  "correct": 2,
+  "precision": 0.2,
+  "guard_rejections": 7,
+  "results": [
+    {
+      "post": "The Behavior of Red Foxes in the Wild",
+      "expected": "red fox",
+      "found": "red fox",
+      "score": 0.25,
+      "guard_passed": true,
+      "correct": true
+    },
+    {
+      "post": "Gray Wolves: Social Structure and Hunting",
+      "expected": "gray wolf",
+      "found": null,
+      "score": 0,
+      "guard_passed": false,
+      "correct": null
+    },
+    {
+      "post": "Understanding Dog Behavior and Training",
+      "expected": "dog",
+      "found": "white dog",
+      "score": 0.07692307692307693,
+      "guard_passed": true,
+      "correct": true
+    },
+    {
+      "post": "Brown Bears: Habitat and Conservation",
+      "expected": "brown bear",
+      "found": null,
+      "score": 0,
+      "guard_passed": false,
+      "correct": null
+    },
+    {
+      "post": "The Life Cycle of Oak Trees",
+      "expected": "oak tree",
+      "found": null,
+      "score": 0,
+      "guard_passed": false,
+      "correct": null
+    },
+    {
+      "post": "Sunflowers: Growth and Cultivation",
+      "expected": "sunflower",
+      "found": null,
+      "score": 0,
+      "guard_passed": false,
+      "correct": null
+    },
+    {
+      "post": "Mountain Ecosystems and Biodiversity",
+      "expected": "mountain landscape",
+      "found": "forest",
+      "score": 0.09090909090909091,
+      "guard_passed": true,
+      "correct": false
+    },
+    {
+      "post": "Coastal Beaches: Formation and Ecology",
+      "expected": "beach",
+      "found": null,
+      "score": 0,
+      "guard_passed": false,
+      "correct": null
+    },
+    {
+      "post": "The Evolution of Automobile Design",
+      "expected": "car",
+      "found": null,
+      "score": 0,
+      "guard_passed": false,
+      "correct": null
+    },
+    {
+      "post": "Modern Furniture: Form and Function",
+      "expected": "chair",
+      "found": null,
+      "score": 0,
+      "guard_passed": false,
+      "correct": null
+    }
+  ]
+}

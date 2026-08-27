@@ -1,114 +1,75 @@
-const embeddingService = require('./embeddingService');
 const mismatchGuard = require('./mismatchGuard');
 const imageRepository = require('../repositories/imageRepository');
 const postRepository = require('../repositories/postRepository');
 const matchRepository = require('../repositories/matchRepository');
 
 class MatchingService {
-    /**
-     * Generate embeddings for all unprocessed images
-     */
+    // No embeddings needed - using text-based matching
     async processImageEmbeddings() {
-        console.log('🧠 Generating image embeddings...');
-        
-        const images = await imageRepository.findAll();
-        let processed = 0;
-
-        for (const image of images) {
-            if (!image.embedding && image.caption) {
-                try {
-                    const result = await embeddingService.generateEmbedding(image.caption);
-                    await imageRepository.updateImage(image.id, {
-                        embedding: result.embedding
-                    });
-                    
-                    await embeddingService.logCost(
-                        image.id,
-                        null,
-                        'image_embedding',
-                        result.tokensUsed,
-                        result.cost,
-                        embeddingService.model
-                    );
-                    
-                    processed++;
-                    console.log(`✅ Embedded image: ${image.subject}`);
-                } catch (error) {
-                    console.error(`❌ Failed to embed image ${image.id}:`, error.message);
-                }
-            }
-        }
-
-        console.log(`✅ Processed ${processed} image embeddings`);
-        return { processed };
+        console.log('ℹ️ Embeddings skipped - using text-based matching');
+        return { processed: 0 };
     }
 
-    /**
-     * Generate embeddings for all posts
-     */
     async processPostEmbeddings() {
-        console.log('🧠 Generating post embeddings...');
-        
-        const posts = await postRepository.findAll();
-        let processed = 0;
-
-        for (const post of posts) {
-            if (!post.embedding) {
-                try {
-                    const text = post.title + ' ' + post.content.substring(0, 500);
-                    const result = await embeddingService.generateEmbedding(text);
-                    await postRepository.updateEmbedding(post.id, result.embedding);
-                    
-                    await embeddingService.logCost(
-                        null,
-                        post.id,
-                        'post_embedding',
-                        result.tokensUsed,
-                        result.cost,
-                        embeddingService.model
-                    );
-                    
-                    processed++;
-                    console.log(`✅ Embedded post: ${post.title}`);
-                } catch (error) {
-                    console.error(`❌ Failed to embed post ${post.id}:`, error.message);
-                }
-            }
-        }
-
-        console.log(`✅ Processed ${processed} post embeddings`);
-        return { processed };
+        console.log('ℹ️ Embeddings skipped - using text-based matching');
+        return { processed: 0 };
     }
 
-    /**
-     * Find matching images for a post
-     */
+    // Extract keywords from text
+    _extractKeywords(text) {
+        const words = text.toLowerCase().replace(/[^a-z0-9\s]/g, '').split(/\s+/);
+        const stopWords = new Set(['the', 'a', 'an', 'of', 'for', 'on', 'at', 'to', 'in', 'with', 'by', 'from', 'up', 'about', 'into', 'through', 'during', 'without', 'and', 'or', 'but', 'so', 'nor', 'yet', 'as', 'than']);
+        return words.filter(w => w.length > 2 && !stopWords.has(w));
+    }
+
+    // Calculate text similarity based on keyword overlap
+    _textSimilarity(text1, text2) {
+        const keywords1 = new Set(this._extractKeywords(text1));
+        const keywords2 = new Set(this._extractKeywords(text2));
+        
+        if (keywords1.size === 0 || keywords2.size === 0) return 0;
+        
+        let overlap = 0;
+        for (const word of keywords1) {
+            if (keywords2.has(word)) overlap++;
+        }
+        
+        const maxSize = Math.max(keywords1.size, keywords2.size);
+        return overlap / maxSize;
+    }
+
     async findMatchesForPost(postId) {
+        console.log(`🔍 Finding matches for post: ${postId}`);
+        
         const post = await postRepository.findById(postId);
         if (!post) {
+            console.error('❌ Post not found:', postId);
             throw new Error('Post not found');
         }
 
-        if (!post.embedding) {
-            throw new Error('Post has no embedding. Please run embedding generation first.');
-        }
-
-        console.log(`🔍 Finding matches for post: "${post.title}"`);
+        console.log(`📝 Post: "${post.title}"`);
 
         const images = await imageRepository.findAll();
+        console.log(`📸 Found ${images.length} images`);
+
+        // Skip if no images
+        if (images.length === 0) {
+            console.log('⚠️ No images found in database');
+            return {
+                post,
+                matches: []
+            };
+        }
+
         const scoredImages = [];
+        const postText = post.title + ' ' + (post.content || '').substring(0, 300);
 
         for (const image of images) {
-            if (!image.embedding) {
-                continue;
-            }
-
-            // Calculate cosine similarity
-            const similarity = embeddingService.cosineSimilarity(
-                post.embedding,
-                image.embedding
-            );
-
+            const imageText = (image.subject || '') + ' ' + (image.caption || '');
+            
+            // Calculate similarity based on keyword overlap
+            const similarity = this._textSimilarity(postText, imageText);
+            
             // Run mismatch guard
             const recommendation = mismatchGuard.getRecommendation(
                 image,
@@ -120,13 +81,14 @@ class MatchingService {
                 image,
                 similarity,
                 recommendation,
-                // Store guard result for review
                 guardResult: recommendation.guardResult
             });
         }
 
         // Sort by similarity score (descending)
         scoredImages.sort((a, b) => b.similarity - a.similarity);
+
+        console.log(`📊 Top match: ${scoredImages.length > 0 ? scoredImages[0].image.subject : 'None'}`);
 
         // Store top matches in database
         const topMatches = scoredImages.slice(0, 5);
@@ -150,35 +112,20 @@ class MatchingService {
         };
     }
 
-    /**
-     * Get all matches for a post
-     */
     async getMatchesForPost(postId) {
-        const matches = await matchRepository.findByPost(postId);
-        return matches;
+        return await matchRepository.findByPost(postId);
     }
 
-    /**
-     * Get pending matches (for review)
-     */
     async getPendingMatches() {
         return await matchRepository.getPendingMatches();
     }
 
-    /**
-     * Approve a match
-     */
     async approveMatch(matchId) {
-        const match = await matchRepository.updateStatus(matchId, 'approved');
-        return match;
+        return await matchRepository.updateStatus(matchId, 'approved');
     }
 
-    /**
-     * Reject a match
-     */
     async rejectMatch(matchId) {
-        const match = await matchRepository.updateStatus(matchId, 'rejected');
-        return match;
+        return await matchRepository.updateStatus(matchId, 'rejected');
     }
 }
 

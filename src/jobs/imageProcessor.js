@@ -6,7 +6,6 @@ class ImageProcessor {
     async processAllImages() {
         console.log('📸 Starting image processing job...');
         
-        // Get unprocessed images
         const images = await imageRepository.getUnprocessedImages();
         
         if (images.length === 0) {
@@ -21,45 +20,57 @@ class ImageProcessor {
         
         for (const image of images) {
             console.log(`\n--- Processing image ${processed + 1}/${images.length} ---`);
+            console.log(`📸 Image: ${image.filename}`);
+            console.log(`📁 Path: ${image.url}`);
+            
+            const fs = require('fs');
+            if (!fs.existsSync(image.url)) {
+                console.error(`❌ File not found: ${image.url}`);
+                await imageRepository.markProcessed(image.id, 'File not found');
+                errors++;
+                continue;
+            }
             
             try {
-                // Analyze image with vision model
                 const result = await visionService.analyzeImage(image.url);
                 
                 if (!result.success) {
-                    console.error(`❌ Failed to process ${image.filename}:`, result.error);
-                    await imageRepository.markProcessed(image.id, result.error);
+                    console.error(`❌ Vision analysis failed:`, result.error);
+                    if (result.details) {
+                        console.error(`   Details:`, JSON.stringify(result.details, null, 2));
+                    }
+                    await imageRepository.markProcessed(image.id, result.error || 'Vision analysis failed');
                     errors++;
                     continue;
                 }
                 
-                // Validate the extracted metadata
+                console.log(`✅ Vision result:`, JSON.stringify(result.data, null, 2));
+                
                 const metadataValidation = validateImageMetadata(result.data);
                 if (!metadataValidation.valid) {
-                    console.error(`❌ Metadata validation failed for ${image.filename}:`, metadataValidation.errors);
+                    console.error(`❌ Metadata validation failed:`, metadataValidation.errors);
                     await imageRepository.markProcessed(image.id, 'Metadata validation failed');
                     errors++;
                     continue;
                 }
                 
-                // Update image with metadata
+                // Update image with metadata - attributes will be converted to PG array by repository
                 await imageRepository.updateImage(image.id, {
                     subject: result.data.subject,
                     category: result.data.category,
-                    attributes: result.data.attributes,
+                    attributes: result.data.attributes, // Array will be converted to PG format
                     caption: result.data.caption,
                     confidence: result.data.confidence,
                     tags: result.data,
                     processed: true
                 });
                 
-                // Log cost
                 await visionService.logCost(
                     image.id,
                     'vision',
-                    result.tokensUsed,
-                    result.cost,
-                    result.model
+                    result.tokensUsed || 0,
+                    result.cost || 0,
+                    result.model || 'unknown'
                 );
                 
                 console.log(`✅ Processed: ${result.data.subject} (${result.data.category})`);
@@ -71,6 +82,7 @@ class ImageProcessor {
                 
             } catch (error) {
                 console.error(`❌ Error processing ${image.filename}:`, error.message);
+                console.error(`   Stack:`, error.stack);
                 await imageRepository.markProcessed(image.id, error.message);
                 errors++;
             }

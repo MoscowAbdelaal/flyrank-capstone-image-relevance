@@ -1,3 +1,4 @@
+const path = require('path');
 const express = require('express');
 const cors = require('cors');
 const dotenv = require('dotenv');
@@ -5,7 +6,18 @@ const { runMigration } = require('./db/migrate');
 const imageRoutes = require('./routes/imageRoutes');
 const matchingRoutes = require('./routes/matchingRoutes');
 
-dotenv.config();
+// Load .env from the correct path
+dotenv.config({ path: path.join(__dirname, '../.env') });
+
+// Check if Gemini API key is set
+if (!process.env.GEMINI_API_KEY) {
+    console.error('❌ GEMINI_API_KEY is not set in .env file');
+    console.error('📝 Please create .env file with your Gemini API key');
+    console.error('   Get your key from: https://aistudio.google.com/');
+    process.exit(1);
+} else {
+    console.log('🔑 Gemini API Key: ✅ Set');
+}
 
 const app = express();
 const PORT = process.env.PORT || 3000;

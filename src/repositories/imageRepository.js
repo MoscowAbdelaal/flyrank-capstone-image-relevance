@@ -21,9 +21,17 @@ class ImageRepository {
         let paramCount = 1;
         
         for (const [key, value] of Object.entries(updates)) {
-            if (key === 'attributes' || key === 'tags' || key === 'embedding') {
-                fields.push(`${key} = $${paramCount}`);
+            if (key === 'attributes' && Array.isArray(value)) {
+                // Convert array to PostgreSQL array format: {'value1','value2'}
+                const pgArray = '{' + value.map(v => `"${v.replace(/"/g, '\\"')}"`).join(',') + '}';
+                fields.push(`${key} = $${paramCount}::text[]`);
+                values.push(pgArray);
+            } else if (key === 'tags' && typeof value === 'object') {
+                fields.push(`${key} = $${paramCount}::jsonb`);
                 values.push(JSON.stringify(value));
+            } else if (key === 'embedding' && Array.isArray(value)) {
+                fields.push(`${key} = $${paramCount}::float[]`);
+                values.push(value);
             } else {
                 fields.push(`${key} = $${paramCount}`);
                 values.push(value);

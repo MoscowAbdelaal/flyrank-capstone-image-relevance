@@ -7,8 +7,39 @@ class EmbeddingService {
             console.warn('⚠️ GEMINI_API_KEY not set. Embedding service will not work.');
         }
         this.genAI = apiKey ? new GoogleGenerativeAI(apiKey) : null;
-        this.model = process.env.EMBEDDING_MODEL || 'text-embedding-004';
-        this.costPerToken = 0.0000001; // Approximate cost per token
+        // Try multiple models
+        this.models = [
+            'gemini-embedding-exp-03-07',
+            'embedding-001',
+            'text-embedding-004'
+        ];
+        this.costPerToken = 0.0000001;
+        this._activeModel = null;
+    }
+
+    async _getActiveModel() {
+        if (this._activeModel) {
+            return this._activeModel;
+        }
+
+        if (!this.genAI) {
+            throw new Error('Gemini API key not configured');
+        }
+
+        for (const modelName of this.models) {
+            try {
+                const model = this.genAI.getGenerativeModel({ model: modelName });
+                // Test the model with a simple request
+                await model.embedContent('test');
+                this._activeModel = modelName;
+                console.log(`✅ Using embedding model: ${modelName}`);
+                return modelName;
+            } catch (error) {
+                console.log(`⚠️ Model ${modelName} not available: ${error.message}`);
+            }
+        }
+
+        throw new Error('No embedding models available');
     }
 
     async generateEmbedding(text) {
@@ -17,23 +48,24 @@ class EmbeddingService {
         }
 
         try {
+            const modelName = await this._getActiveModel();
+            const model = this.genAI.getGenerativeModel({ model: modelName });
+            
             console.log(`🧠 Generating embedding for text (${text.length} chars)...`);
 
-            const model = this.genAI.getGenerativeModel({ model: this.model });
             const result = await model.embedContent(text);
             const embedding = result.embedding.values;
 
-            // Estimate cost (rough approximation)
             const tokensUsed = Math.ceil(text.length / 4);
             const cost = tokensUsed * this.costPerToken;
 
             console.log(`✅ Embedding generated (${embedding.length} dimensions)`);
-            console.log(`💲 Estimated cost: $${cost.toFixed(6)}`);
 
             return {
                 embedding,
                 tokensUsed,
-                cost
+                cost,
+                model: modelName
             };
 
         } catch (error) {
@@ -56,7 +88,6 @@ class EmbeddingService {
         }
     }
 
-    // Calculate cosine similarity between two embeddings
     cosineSimilarity(vecA, vecB) {
         if (!vecA || !vecB || vecA.length !== vecB.length) {
             return 0;
