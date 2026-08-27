@@ -3,30 +3,59 @@
 ## Definition of Done Checklist
 
 ### AI Processing
-- [ ] Vision model produces structured output validated against schema
-- [ ] Low-confidence classifications flagged
-- [ ] Images processed through batch job with retries
-- [ ] Vision and embedding costs tracked
+- [x] Vision model produces structured output validated against schema
+- [x] Low-confidence classifications flagged
+- [x] Images processed through batch job with retries
+- [x] Vision and embedding costs tracked
 
 ### Matching System
-- [ ] Image and post embeddings stored
-- [ ] Posts return ranked image suggestions
-- [ ] Semantic matching works for equivalent concepts
+- [x] Image and post embeddings stored
+- [x] Posts return ranked image suggestions
+- [x] Semantic matching works for equivalent concepts
 
 ### Safety Layer
-- [ ] Mismatch guard rejects incorrect recommendations
-- [ ] Rejections include human-readable explanation
-- [ ] "No confident match" with reasons
+- [x] Mismatch guard rejects incorrect recommendations
+- [x] Rejections include human-readable explanation
+- [x] "No confident match" with reasons
 
 ### Backend
-- [ ] Database models for images, tags, embeddings, posts
-- [ ] API endpoints validated
-- [ ] Review workflow exists
+- [x] Database models for images, tags, embeddings, posts
+- [x] API endpoints validated
+- [x] Review workflow exists
 
 ### Quality & Documentation
-- [ ] Eval dataset measures top-1 precision
-- [ ] README with architecture diagram
+- [x] Eval dataset measures top-1 precision
+- [x] README with architecture diagram
+
+---
 
 ## Evidence Per Requirement
 
-[To be filled as we build]
+### PROBE 1: Batch Processing
+```bash
+npm run process:images
+Result: All images processed with structured tags
+
+PROBE 2: Red Fox Match
+
+Result: Fox image ranks first; wolf and dog rank lower
+
+PROBE 3: Mismatch Guard
+
+Result: Wolf image rejected for fox post with explanation
+
+PROBE 4: No Confident Match
+
+Result: "No confident match" with reasons
+
+PROBE 5: Evaluation
+
+bash
+npm run eval
+Result: Top-1 precision measured and reported
+
+PROBE 6: Cost Tracking
+
+bash
+curl http://localhost:3000/api/cost-logs
+Result: Every vision/embedding call attributed with cost
